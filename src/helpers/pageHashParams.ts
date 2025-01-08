@@ -18,25 +18,25 @@ function toParams(str: string) {
     return ret;
 }
 function toString(params: Record<string, string>) {
-    return new URLSearchParams(params).toString();
+    return new URLSearchParams(params).toString().replace(/=$/, '');
 }
 
 const hasWindow = typeof window !== 'undefined';
 const pageHashParams: Observable<Record<string, string>> = observable(
-    hasWindow ? toParams(window.location.hash.slice(1)) : {}
+    hasWindow ? toParams(window.location.hash.slice(1)) : {},
 );
 
 if (hasWindow) {
     let isSetting = false;
     // Set the page hash when the observable changes
-    pageHashParams.onChange((value) => {
+    pageHashParams.onChange(({ value }) => {
         if (!isSetting) {
             const hash = '#' + toString(value);
             const setter = _options?.setter || 'hash';
             if (setter === 'pushState') {
-                history.pushState(null, null, hash);
+                history.pushState(null, null as any, hash);
             } else if (setter === 'replaceState') {
-                history.replaceState(null, null, hash);
+                history.replaceState(null, null as any, hash);
             } else {
                 location.hash = hash;
             }
@@ -52,4 +52,4 @@ if (hasWindow) {
     window.addEventListener('hashchange', cb);
 }
 
-export { pageHashParams, configurePageHashParams };
+export { configurePageHashParams, pageHashParams };

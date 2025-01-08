@@ -1,121 +1,130 @@
 # Legend-State
 
-Legend-State is a super fast and powerful state manager for JavaScript apps with two primary goals:
+Legend-State is a super fast all-in-one state and sync library that lets you write less code to make faster apps. Legend-State has four primary goals:
 
-### 1. <span className="text-xl">🦄</span> As easy as possible to use
+### 1. 🦄 As easy as possible to use
 
-There is no boilerplate and there are no actions, reducers, selectors, dispatchers, sagas, thunks, or epics. Observables are just normal objects that you can listen to for changes.
+There is no boilerplate and there are no contexts, actions, reducers, dispatchers, sagas, thunks, or epics. It doesn't modify your data at all, and you can just call `get()` to get the raw data and `set()` to change it.
+
+In React components you can call `use()` on any observable to get the raw data and automatically re-render whenever it changes.
 
 ```jsx
-// Create an observable object
-const state = observable({ settings: { theme: 'dark' } })
+import { observable, observe } from "@legendapp/state"
+import { observer } from "@legendapp/state/react"
 
-// Just get and set
-state.settings.theme.get() === 'dark'
-state.settings.theme.set('light')
+const settings$ = observable({ theme: 'dark' })
 
-// observe re-runs when accessed observables change
+// get returns the raw data
+settings$.theme.get() // 'dark'
+// set sets
+settings$.theme.set('light')
+
+// Computed observables with just a function
+const isDark$ = observable(() => settings$.theme.get() === 'dark')
+
+// observing contexts re-run when tracked observables change
 observe(() => {
-    console.log(state.settings.theme.get())
+  console.log(settings$.theme.get())
 })
 
-// Observer components automatically track observables and re-render when they change
-const Component = observer(function Component() => {
-    const theme = state.settings.theme.get()
+const Component = observer(function Component() {
+    const theme = state$.settings.theme.get()
 
     return <div>Theme: {theme}</div>
 })
 ```
 
-### 2. <span className="text-xl">⚡️</span> The fastest React state library
+### 2. ⚡️ The fastest React state library
 
-Legend-State beats every other state library on just about every metric and is so optimized for arrays that it even beats vanilla JS on the swap benchmark. At only `3kb` and with the massive reduction in boilerplate code, you'll have big savings in file size too.
+Legend-State beats every other state library on just about every metric and is so optimized for arrays that it even beats vanilla JS on the "swap" and "replace all rows" benchmarks. At only `4kb` and with the massive reduction in boilerplate code, you'll have big savings in file size too.
 
 <p>
     <img src="https://www.legendapp.com/img/dev/state/times.png" />
 </p>
 
-See [the documentation](https://www.legendapp.com/open-source/state) for more details.
+See [Fast 🔥](https://www.legendapp.com/open-source/state/v3/intro/fast/) for more details of why Legend-State is so fast.
+
+### 3. 🔥 Fine-grained reactivity for minimal renders
+
+Legend-State lets you make your renders super fine-grained, so your apps will be much faster because React has to do less work. The best way to be fast is to render less, less often.
+
+```jsx
+function FineGrained() {
+    const count$ = useObservable(0)
+
+    useInterval(() => {
+        count$.set(v => v + 1)
+    }, 600)
+
+    // The text updates itself so the component doesn't re-render
+    return (
+        <div>
+            Count: <Memo>{count$}</Memo>
+        </div>
+    )
+}
+```
+
+### 4. 💾 Powerful sync and persistence
+
+Legend-State includes a powerful [sync and persistence system](../../usage/persist-sync). It easily enables local-first apps by optimistically applying all changes locally first, retrying changes even after restart until they eventually sync, and syncing minimal diffs. We use Legend-State as the sync systems in [Legend](https://legendapp.com) and [Bravely](https://bravely.io), so it is by necessity very full featured while being simple to set up.
+
+Local persistence plugins for the browser and React Native are included, with sync plugins for [Keel](https://www.keel.so), [Supabase](https://www.supabase.com), [TanStack Query](https://tanstack.com/query), and `fetch`.
+
+```js
+const state$ = observable(
+    users: syncedKeel({
+        list: queries.getUsers,
+        create: mutations.createUsers,
+        update: mutations.updateUsers,
+        delete: mutations.deleteUsers,
+        persist: { name: 'users', retrySync: true },
+        debounceSet: 500,
+        retry: {
+            infinite: true,
+        },
+        changesSince: 'last-sync',
+    }),
+    // direct link to my user within the users observable
+    me: () => state$.users['myuid']
+)
+
+observe(() => {
+    // get() activates through to state$.users and starts syncing.
+    // it updates itself and re-runs observers when name changes
+    const name = me$.name.get()
+})
+
+// Setting a value goes through to state$.users and saves update to server
+me$.name.set('Annyong')
+```
 
 ## Install
 
-`npm install @legendapp/state` or `yarn add @legendapp/state`
-
-## Example
-
-```jsx
-import { observable } from "@legendapp/state"
-import { observer } from "@legendapp/state/react";
-import { persistObservable } from "@legendapp/state/persist";
-
-// Create an observable object
-const state = observable({ settings: { theme: 'dark' } })
-
-// get() returns the raw data
-state.settings.theme.get() === 'dark'
-
-// observe re-runs when any observables change
-observe(() => {
-    console.log(state.settings.theme.get())
-})
-
-// Assign to state with set
-state.settings.theme.set('light')
-
-// Automatically persist state. Refresh this page to try it.
-persistObservable(state, { local: 'exampleState' })
-
-// Components re-render only when accessed observables change
-const Component = observer(function Component() {
-    const theme = state.settings.theme.get()
-    // state.settings.theme is automatically tracked for changes
-
-    const toggle = () => {
-        state.settings.theme.set(theme =>
-            theme === 'dark' ? 'light' : 'dark'
-        )
-    }
-
-    return (
-        <div
-            className={theme === 'dark' ? 'theme-dark' : 'theme-light'}
-        >
-            <div>Theme: {theme}</div>
-            <Button onClick={toggle}>
-                Toggle theme
-            </Button>
-        </div>
-    )
-})
-```
+`bun add @legendapp/state` or `npm install @legendapp/state` or `yarn add @legendapp/state`
 
 ## Highlights
 
-- ✨ Super easy to use - observables are normal objects
+- ✨ Super easy to use 😌
+- ✨ Super fast ⚡️
+- ✨ Super small at 4kb 🐥
+- ✨ Fine-grained reactivity 🔥
 - ✨ No boilerplate
-- ✨ Safe from 🔫 footguns
 - ✨ Designed for maximum performance and scalability
 - ✨ React components re-render only on changes
 - ✨ Very strongly typed with TypeScript
 - ✨ Persistence plugins for automatically saving/loading from storage
 - ✨ State can be global or within components
 
-[Read more](https://www.legendapp.com/open-source/state/why/) about why Legend-State might be right for you.
+[Read more](https://www.legendapp.com/open-source/state/v3/intro/why/) about why Legend-State might be right for you.
 
 ## Documentation
 
 See [the documentation site](https://www.legendapp.com/open-source/state/).
 
-## Road to 1.0
+## Community
 
-- [ ] Improve documentation
-- [ ] An examples page
-- [ ] Fix types for TypeScript strict mode
-
-## Also in progress
-
-- [ ] IndexedDB persistence plugin
-- [ ] Remote persistence plugin for Firebase Realtime Database
+Join us on [Discord](https://discord.gg/5CBaNtADNX) to get involved with the Legend community.
 
 ## 👩‍⚖️ License
 

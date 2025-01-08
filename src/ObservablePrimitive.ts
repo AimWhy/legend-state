@@ -1,27 +1,44 @@
-import { symbolGetNode, symbolIsEvent, symbolIsObservable } from './globals';
-import { isBoolean, isFunction } from './is';
-import { doNotify } from './notify';
-import {
-    ListenerFn,
-    NodeValue,
-    ObservableChild,
-    ObservableListenerDispose,
-    ObservablePrimitive,
-    TrackingType,
-} from './observableInterfaces';
+import { set, get, peek, flushPending } from './ObservableObject';
+import { symbolGetNode } from './globals';
+import { isBoolean } from './is';
+import type { NodeInfo, TrackingType } from './observableInterfaces';
+import type { ObservablePrimitive, ObservableBoolean } from './observableTypes';
 import { onChange } from './onChange';
-import { updateTracking } from './tracking';
 
 interface ObservablePrimitiveState {
-    _node: NodeValue;
+    _node: NodeInfo;
     toggle: () => void;
 }
 
-export function ObservablePrimitiveClass<T>(this: ObservablePrimitive<T> & ObservablePrimitiveState, node: NodeValue) {
+const fns: (keyof ObservableBoolean)[] = ['get', 'set', 'peek', 'onChange', 'toggle'];
+
+export function ObservablePrimitiveClass<T>(this: ObservablePrimitive<T> & ObservablePrimitiveState, node: NodeInfo) {
     this._node = node;
-    this.set = this.set.bind(this);
-    this.toggle = this.toggle.bind(this);
+
+    // Bind to this
+    for (let i = 0; i < fns.length; i++) {
+        const key: keyof typeof this = fns[i];
+        this[key] = (this[key] as Function).bind(this);
+    }
 }
+
+// Add observable functions to prototype
+function proto(key: string, fn: Function) {
+    ObservablePrimitiveClass.prototype[key] = function (...args: any[]) {
+        return fn.call(this, this._node, ...args);
+    };
+}
+proto('peek', (node: NodeInfo) => {
+    flushPending();
+    return peek(node);
+});
+proto('get', (node: NodeInfo, options?: TrackingType) => {
+    flushPending();
+    return get(node, options);
+});
+proto('set', set);
+proto('onChange', onChange);
+
 // Getters
 Object.defineProperty(ObservablePrimitiveClass.prototype, symbolGetNode, {
     configurable: true,
@@ -29,61 +46,17 @@ Object.defineProperty(ObservablePrimitiveClass.prototype, symbolGetNode, {
         return this._node;
     },
 });
-Object.defineProperty(ObservablePrimitiveClass.prototype, symbolIsObservable, {
-    configurable: true,
-    value: true,
-});
-Object.defineProperty(ObservablePrimitiveClass.prototype, symbolIsEvent, {
-    configurable: true,
-    value: false,
-});
-ObservablePrimitiveClass.prototype.peek = function () {
-    const root = this._node.root;
-    if (root.activate) {
-        root.activate();
-        root.activate = undefined;
-    }
-    return root._;
-};
-ObservablePrimitiveClass.prototype.get = function () {
-    const node = this._node;
-    updateTracking(node);
 
-    return this.peek();
-};
-// Setters
-ObservablePrimitiveClass.prototype.set = function <T>(value: T | ((prev: T) => T)): ObservableChild<T> {
-    if (isFunction(value)) {
-        value = value(this._node.root._);
-    }
-    if (this._node.root.locked) {
-        throw new Error(
-            process.env.NODE_ENV === 'development'
-                ? '[legend-state] Cannot modify an observable while it is locked. Please make sure that you unlock the observable before making changes.'
-                : '[legend-state] Modified locked observable'
-        );
-    }
-    const root = this._node.root;
-    const prev = root._;
-    root._ = value;
-    doNotify(this._node, value, [], value, prev, 0);
-    return this as unknown as ObservableChild<T>;
-};
-ObservablePrimitiveClass.prototype.toggle = function (): boolean {
+ObservablePrimitiveClass.prototype.toggle = function (): void {
     const value = this.peek();
-    if (isBoolean(value)) {
+    if (value === undefined || value === null || isBoolean(value)) {
         this.set(!value);
     } else if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
         throw new Error('[legend-state] Cannot toggle a non-boolean value');
     }
-
-    return !value;
 };
-// Listener
-ObservablePrimitiveClass.prototype.onChange = function <T>(
-    cb: ListenerFn<T>,
-    track?: TrackingType,
-    noArgs?: boolean
-): ObservableListenerDispose {
-    return onChange(this._node, cb, track, noArgs);
+ObservablePrimitiveClass.prototype.delete = function () {
+    this.set(undefined);
+
+    return this;
 };

@@ -1,9 +1,14 @@
-import { MMKV } from 'react-native-mmkv';
-import type { Change, ObservablePersistLocal, PersistMetadata, PersistOptionsLocal } from '../observableInterfaces';
+import type { Change } from '@legendapp/state';
+import { internal, setAtPath } from '@legendapp/state';
+import type { ObservablePersistPlugin, PersistMetadata, PersistOptions } from '@legendapp/state/sync';
+import { MMKV, MMKVConfiguration } from 'react-native-mmkv';
 
 const symbolDefault = Symbol();
+const MetadataSuffix = '__m';
 
-export class ObservablePersistMMKV implements ObservablePersistLocal {
+const { safeParse, safeStringify } = internal;
+
+export class ObservablePersistMMKV implements ObservablePersistPlugin {
     private data: Record<string, any> = {};
     private storages = new Map<symbol | string, MMKV>([
         [
@@ -13,53 +18,74 @@ export class ObservablePersistMMKV implements ObservablePersistLocal {
             }),
         ],
     ]);
-    private getStorage(config: PersistOptionsLocal): MMKV {
-        const { mmkv } = config;
-        if (mmkv) {
-            const key = JSON.stringify(mmkv);
-            let storage = this.storages.get(key);
-            if (!storage) {
-                storage = new MMKV(mmkv);
-                this.storages.set(key, storage);
-            }
-            return storage;
-        } else {
-            return this.storages.get(symbolDefault);
-        }
+    private configuration: MMKVConfiguration;
+
+    constructor(configuration: MMKVConfiguration) {
+        this.configuration = configuration;
     }
-    public getTable<T = any>(table: string, config: PersistOptionsLocal): T {
+    // Gets
+    public getTable<T = any>(table: string, init: object, config: PersistOptions): T {
         const storage = this.getStorage(config);
         if (this.data[table] === undefined) {
             try {
                 const value = storage.getString(table);
-                return value ? JSON.parse(value) : undefined;
+                this.data[table] = value ? safeParse(value) : init;
             } catch {
                 console.error('[legend-state] MMKV failed to parse', table);
             }
         }
         return this.data[table];
     }
-    public getMetadata(table: string, config: PersistOptionsLocal): PersistMetadata {
-        return this.getTable(table + '__m', config);
+    public getMetadata(table: string, config: PersistOptions): PersistMetadata {
+        return this.getTable(table + MetadataSuffix, {}, config);
     }
-    public async set(table: string, value: any, changes: Change[], config: PersistOptionsLocal): Promise<void> {
-        this.data[table] = value;
+    // Sets
+    public set(table: string, changes: Change[], config: PersistOptions) {
+        if (!this.data[table]) {
+            this.data[table] = {};
+        }
+        for (let i = 0; i < changes.length; i++) {
+            const { path, valueAtPath, pathTypes } = changes[i];
+            this.data[table] = setAtPath(this.data[table], path as string[], pathTypes, valueAtPath);
+        }
         this.save(table, config);
     }
-    public async updateMetadata(table: string, metadata: PersistMetadata, config: PersistOptionsLocal) {
-        return this.set(table + '__m', metadata, undefined, config);
+    public setMetadata(table: string, metadata: PersistMetadata, config: PersistOptions) {
+        return this.setValue(table + MetadataSuffix, metadata, config);
     }
-    public async deleteTable(table: string, config: PersistOptionsLocal): Promise<void> {
+    public deleteTable(table: string, config: PersistOptions): void {
         const storage = this.getStorage(config);
         delete this.data[table];
         storage.delete(table);
     }
-    private save(table: string, config: PersistOptionsLocal | undefined) {
+    public deleteMetadata(table: string, config: PersistOptions) {
+        this.deleteTable(table + MetadataSuffix, config);
+    }
+    // Private
+    private getStorage(config: PersistOptions): MMKV {
+        const configuration = config.mmkv || this.configuration;
+        if (configuration) {
+            const key = JSON.stringify(configuration);
+            let storage = this.storages.get(key);
+            if (!storage) {
+                storage = new MMKV(configuration);
+                this.storages.set(key, storage);
+            }
+            return storage;
+        } else {
+            return this.storages.get(symbolDefault)!;
+        }
+    }
+    private async setValue(table: string, value: any, config: PersistOptions) {
+        this.data[table] = value;
+        this.save(table, config);
+    }
+    private save(table: string, config: PersistOptions) {
         const storage = this.getStorage(config);
         const v = this.data[table];
         if (v !== undefined) {
             try {
-                storage.set(table, JSON.stringify(v));
+                storage.set(table, safeStringify(v));
             } catch (err) {
                 console.error(err);
             }
@@ -67,4 +93,8 @@ export class ObservablePersistMMKV implements ObservablePersistLocal {
             storage.delete(table);
         }
     }
+}
+
+export function observablePersistMMKV(configuration: MMKVConfiguration) {
+    return new ObservablePersistMMKV(configuration);
 }

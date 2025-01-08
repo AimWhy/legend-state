@@ -1,17 +1,22 @@
-export * from './src/react/enableLegendStateReact';
-export * from './src/react/flow';
-export * from './src/react/lifecycle';
+export * from './src/react/Computed';
+export * from './src/react/For';
+export { usePauseProvider } from './src/react/usePauseProvider';
+export * from './src/react/Memo';
+export { Reactive } from './src/react/Reactive';
+export type { IReactive } from './src/react/Reactive';
+export * from './src/react/Show';
+export * from './src/react/Switch';
+export * from './src/react/reactInterfaces';
 export * from './src/react/reactive-observer';
 export * from './src/react/useComputed';
+export * from './src/react/useEffectOnce';
 export * from './src/react/useIsMounted';
+export * from './src/react/useMount';
 export * from './src/react/useObservable';
 export * from './src/react/useObservableReducer';
 export * from './src/react/useObserve';
 export * from './src/react/useObserveEffect';
 export * from './src/react/useSelector';
-
-import type { ReactFragment } from 'react';
-
-declare module '@legendapp/state' {
-    export interface ObservableBaseFns<T> extends ReactFragment {}
-}
+export * from './src/react/useUnmount';
+export * from './src/react/useWhen';
+export { configureReactive } from './src/react/configureReactive';

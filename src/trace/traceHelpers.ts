@@ -1,6 +1,6 @@
-import { NodeValue, tracking, TrackingNode } from '@legendapp/state';
+import type { NodeInfo } from '@legendapp/state';
 
-export function getNodePath(node: NodeValue) {
+export function getNodePath(node: NodeInfo) {
     const arr: (string | number)[] = [];
     let n = node;
     while (n?.key !== undefined) {

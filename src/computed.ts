@@ -1,33 +1,18 @@
-import { getNode, lockObservable } from './helpers';
-import { isPromise } from './is';
+import { linked } from './linked';
 import { observable } from './observable';
-import { ObservableComputed } from './observableInterfaces';
-import { observe } from './observe';
+import type { LinkedOptions } from './observableInterfaces';
+import { Observable, ObservableParam, RecursiveValueOrFunction } from './observableTypes';
 
-export function computed<T>(compute: () => T | Promise<T>): ObservableComputed<T> {
-    // Create an observable for this computed variable
-    let obs = observable<T>();
-    lockObservable(obs, true);
-
-    // Lazily activate the observable when get is called
-    getNode(obs).root.activate = () => {
-        const set = function (val: any) {
-            // Update the computed value
-            lockObservable(obs, false);
-            obs.set(val);
-            lockObservable(obs, true);
-        };
-        const fn = function () {
-            let val = compute();
-            if (isPromise<T>(val)) {
-                val.then((v) => set(v));
-            } else {
-                set(val);
-            }
-        };
-
-        observe(fn);
-    };
-
-    return obs as unknown as ObservableComputed<T>;
+export function computed<T>(get: () => RecursiveValueOrFunction<T>): Observable<T>;
+export function computed<T, T2 = T>(
+    get: (() => RecursiveValueOrFunction<T>) | RecursiveValueOrFunction<T>,
+    set: (value: T2) => void,
+): Observable<T>;
+export function computed<T, T2 = T>(
+    get: (() => T | Promise<T>) | ObservableParam<T> | LinkedOptions<T>,
+    set?: (value: T2) => void,
+): Observable<T> {
+    return observable(
+        set ? linked({ get: get as LinkedOptions['get'], set: ({ value }: any) => set(value) }) : get,
+    ) as any;
 }

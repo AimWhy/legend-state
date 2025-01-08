@@ -1,3 +1,415 @@
+## 3.0.0-alpha.1
+- Fix: The new undoRedo helper was not exported correctly, moved it to `/helpers`
+- Fix: IndexedDB plugin was not saving primitives properly when combined with `itemID` option
+
+## 3.0.0-alpha.0
+See https://www.legendapp.com/open-source/state/v3/other/migrating/ for details
+- Types: Rewritten from scratch to be much better
+- Feat: computed/proxy are now just functions
+- Feat: New synced with much improved sync/persist functionality
+- Feat: New sync plugins for Keel, Supabase, TanStack Query, fetch
+- Removed: Old persist system, persistObservable, usePersistedObservable, etc...
+- Change: useObservable with a function parameter is now reactive like useComputed was. So use peek() when accessing observables inside it if you want it to be just an initial value and not be reactive.
+- Change: Computeds now only re-compute themselves when observed. This may cause some migration issues if your computeds had side effects, as they will not re-run when dependencies change unless being observed.
+- Removed:  lockObservable - With the new method of computeds it's not possible to modify the types to be readonly, so we removed this feature.
+- Change: set and toggle return void: They had previously returned the observable in order to allow chaining, but it caused unintended side effects, so they now return void.
+- Change: `onSet` was renamed to `onAfterSet` for clarity
+- Removed: The concept of "after batch" - it was generally unreliable because batches can run recursively
+- Renamed: `enableDirectAccess()` to `enable$GetSet()` and `enableDirectPeek()` to `enable_PeekAssign()` for clarity
+
+## 2.1.14
+- Fix: Improved and better tested babel plugin - By @hzoo https://github.com/LegendApp/legend-state/pull/270
+- Fix: useSelector with an observable was ignoring suspense option - By @lishine https://github.com/LegendApp/legend-state/pull/291
+- Feat: An undoRedo helper to add undo/redo functionality to an observable
+
+## 2.1.13
+- Fix: Not persisting Map/Set correctly if at root of observable
+
+## 2.1.12
+- Fix: useSelector only short-circuits creating a hook if parameter is an observable, fixing useSelector re-rendering when its return value hadn't changed
+
+## 2.1.11
+- Fix: Recent useSelector optimizations causing some issuesin dev strict mode
+
+## 2.1.10
+- Fix: Types of observer
+
+## 2.1.9
+- Fix: useSelector was creating too many listeners
+
+## 2.1.8
+- Fix: array includes was not working correctly
+
+## 2.1.7
+- Fix: typescript errors when external imports are not available
+
+## 2.1.6
+- Fix: changed type imports from external packages to fail gracefully if they don't exist in node
+
+## 2.1.5
+- Fix: Dates were being considered as objects and were sometimes not being considered changed
+
+## 2.1.4
+- Fix: observe not running reaction if selector is an object or array
+
+## 2.1.3
+- Fix: An occasional error in sync get function
+
+## 2.1.2
+- Fix: Local cache was not saving Map/Set correctly
+
+## 2.1.1
+- Feat: usePauseProvider to pause/resume all updates under a context
+
+## 2.0.3
+- Feat: support persistence with no get
+- Fix: errors in observer components getting swallowed
+
+# 2.0.2
+- Fix: persistence was not adding clearLocal to the new state node
+- Fix: removed clearing ref from useObserve - it was causing fast refresh bugs and wasn't really necessary
+- Package: Added react as an optional peerDependency
+- Change: promise/persisted state key to support _state so it doesn't break user data with state keys, will slowly migrate to that
+
+## 2.0.0
+
+### Breaking
+- Change: Setting a promise into an observable now creates a child prop `state` which is not in the raw data and is only accessible through the observable containing `{ isLoaded, error }`
+- Change: Renamed some parameters in `persistObservable` and `configureObservablePersistence`
+- Change: `afterBatch` removed and functionality merged into `batch`
+- Removed: `/react-components` exports
+- Removed: `enableLegendStateReact`
+- Removed: `eachValues` prop from `For`
+- Deprecated: `enableReactDirectRender`
+- Deprecated: Reactive props ending in $ in favor of starting with $
+
+### Improvements
+- Docs: Brand new docs site at https://legendapp.com/open-source/state with better design, navigation sidebar, search
+- Feat: Remote persistence with plugins for `fetch`, TanStack-Query, and Firebase Realtime Database
+- Feat: `enableReactTracking({ auto: true })` to make components automatically track `get()` calls on observables
+- Feat: `useWhen` and `useWhenReady` hooks
+- Feat: `computed` can be set or assigned into an observable after creation
+- Perf: Observable nodes activate lazily so creating or setting large objects is much faster
+- Fix: Misc bugs with mergeIntoObservable
+- Fix: Reactive.FlatList $data prop was not working
+
+See https://legendapp.com/open-source/legend-state-v2/ for more details.
+
+## 1.11.3
+
+- Fix: computed was not activating if its value started as undefined
+
+## 1.11.2
+
+- Fix: useSelector was always re-rendering even if the returned value didn't change
+
+## 1.11.1
+
+- Removed the deprecation warning about reactive props since that might affect a lot of people and we can migrate that more slowly.
+
+## 1.11.0
+
+- This version displays deprecation warnings to prepare for version 2.0 release which will remove the deprecated features. See https://legendapp.com/open-source/state/migrating/ for details on migration or disabling the warning.
+
+## 1.10.3
+
+- Fix: Reactive elements were not supporting observable children
+
+## 1.10.2
+
+- Types: Improve types of useObservableQuery - By @bram209 https://github.com/LegendApp/legend-state/pull/182
+
+## 1.10.1
+
+- Types: Types of Map and Set were not correct if at the root of an observable
+- Fix: `size` property of Map was not an observable
+
+## 1.10.0
+
+- Feat: `proxy` supports three modes like computed: proxy to a computed plain object, proxy to an observable, proxy to a two-way computed
+- Feat: `proxy` sets raw values on parents and notifies when proxied children change
+- Fix: optimize batching so that modifying a child after modifying its parent merges into the existing change rather than creating a new change
+- Fix: `Show` was not passing value to children when children is a function
+
+## 1.9.0
+
+- Feat: Nested computeds set their value on the raw object so that `get()` on the parent will include the values of child computeds
+
+## 1.8.1
+
+- Feat: Added findIDKey and optimized to internal
+- Fix: Added more safety around dev-only assertions because they were throwing errors in some build systems
+
+## 1.8.0
+
+- Feat: Support Suspense with `useSelector(state, { suspend: true })` or `state.use({ suspend: true })`
+
+## 1.7.3
+
+- Types: Improved types of proxy so it can have complex mapped types
+
+## 1.7.2
+
+- Fix: opaqueObject was not blocking looping through objects in constructor https://github.com/LegendApp/legend-state/issues/163
+
+## 1.7.1
+
+Fix: the change to add SessionStorage was crashing when run server-side in Next.js
+
+## 1.7.0
+
+- Feat: Add `ObservablePersistSessionStorage`. -By @minorgod https://github.com/LegendApp/legend-state/pull/164
+
+## 1.6.4
+
+- Types: `Selector` now allows `ObservableEvent`
+- Types: `ObservableWriteable` was not exactly correct after the change to add Promise to `set`
+
+## 1.6.3
+
+- Fix: `useObservableNextRouter` was throwing warnings on some route changes
+- Fix: `enableDirectPeek` set now matches normal set behavior with promise and function extraction and all
+- Types: Package is now built in TypeScript strict mode
+
+## 1.6.2
+
+- Types: Improved types of Computed, Memo, and the babel transform
+- Types: Improved handling of null and undefined in observables
+
+## 1.6.1
+
+- Types: Improve handling of optional properties in observable constructor
+- Types: Add missing Promise type in set function
+
+## 1.6.0
+
+- Feat: `set` automatically unwraps promises
+
+## 1.5.1
+
+- Fix: Optional properties in observables were causing TS warnings
+
+## 1.5.0
+
+- Feat: add Reactive components, with configuration for React and React Native, to replace Legend components
+- Fix: Improved types of useObservableQuery -By @sheldon-welinga https://github.com/LegendApp/legend-state/pull/146
+- Fix: babel transform was breaking Memo/Computed with observable child
+
+## 1.4.0
+
+- Feat: Returning an observable in a computed creates a two-way link to the target observable.
+- Feat: `computed` is supported as a child of an observable
+- Feat: `proxy` is like a `computed` but given a key, usable by indexing into an object with a string key
+- Feat: Functions and computeds in the hierarchy of the constructing object in an observable are extracted into observable metadata so that setting the observable does not delete them.
+- Feat: `Memo` and `Computed` support observables as children
+- Feat: `reactiveComponents` makes multiple reactive components at once from the children of the target object
+- Feat: Reactive components and `reactive` makes children reactive if it's a functions
+- Fix: `useObserve` updates the compute and set functions when re-run
+- Fix: Direct setting with `_` was not working with falsy values
+- Change: Reactive props will now start with `$` instead of ending with `$`. Both work for now, but `prop$` will be deprecated in a later version.
+- Perf: `useSelector` skips creating a hook if it's inside an `observer`
+
+## 1.3.6
+
+- Fix: Setting a primitive observable to the same value was still notifying listeners
+
+## 1.3.5
+
+- Fix: array.find was returning `[]` instead of `undefined` when it found no matches
+
+## 1.3.4
+
+- Feat: (experimental) `enableDirectPeek` enables a property on observables named _ as a shorthand for peek(), and assigning to it modifies the underlying object without notifying listeners of changes.
+
+## 1.3.2
+
+- Fix: `reactive` was not working with some external packages like NativeBase
+
+## 1.3.0
+
+See [https://legendapp.com/open-source/state/experiments/](https://legendapp.com/open-source/state/experiments/) for details about the new features in this version.
+
+- Feat: Ability to globally add functions/properties to observables
+- Feat: (experimental) `enableDirectAccess` enables a property on observables named $ as a shorthand for get/set
+- Feat: (experimental) `enableReactUse` enables a `use()` function on all observables to get the value of an observable and track it for changes within a React component
+- Feat: (experimental) `enableReactDirectRender` replaces `enableLegendStateReact` (will be deprecated in a later version)
+- Fix: `afterBatch` was running after all recursive batches rather than just the current batch
+- Fix: Circular reference detection was failing on null values
+
+## 1.2.11
+
+- Fix: detection of circular references was having false positives if references existed in multiple places in the hierarchy
+- Fix: Crash in proxy trap with nested calls to assign (part 2)
+
+## 1.2.10
+
+- Fix: Crash in proxy trap with nested calls to assign
+
+## 1.2.9
+
+- Perf: A small optimization in For to skip Object.assign if there's no itemProps
+- Perf: Change merge of pending data on load to use setAtPath instead of mergeIntoObservable
+- Misc: Add some warnings when setting an observable directly
+
+## 1.2.8
+
+- Fix: Remove peerDependencies which was causing issues in some environments
+
+## 1.2.7
+
+- Fix: Potential crash in persistence if pathTypes comes from persistence undefined
+
+## 1.2.6
+
+- Fix: _arr in fieldTransforms not working for strings
+
+## 1.2.5
+
+- Fix: peerDependencies to make next optional
+
+## 1.2.4
+
+- Types: Fix types of Switch so that it works better with booleans
+
+## 1.2.3
+
+- Types: Fix types of Map get so that it returns an Observable of the correct type
+
+## 1.2.2
+
+- Fix: When persisting, changes to a node are ignored if a later change modifies a parent node (as can happen when deleting nodes)
+
+## 1.2.1
+
+- Feat: Support Map in the For component
+- Change: TrackingType "optimize" parameter is changed to a symbol to avoid conflict with Map get. It will still work for now, but please `import { optimize } from "@legendapp/state"` and use that instead.
+- Change: The For component's `eachValues` prop is deprecated in favor of just working with the `each` prop. It will still work for now, but please change `eachValues` to `each`.
+
+## 1.2.0
+
+- Feat: Added support for observable Map, WeakMap, Set, WeakSet
+
+## 1.1.0
+
+- Perf: Listeners are batched uniquely so that each listener will fire only once for all of the changes within a batch
+- Change: Array filter and find return the observable instead of the raw data.
+
+## 1.0.0
+
+After an unexpectly large number of changes while in RC, 1.0 includes tons of improvements and fixes that can broadly be categorized as:
+
+- Improved persistence plugin system
+- Added two-way `computed`
+- Performance improvements
+- A few minor breaking changes - see https://legendapp.com/open-source/state/migrating/
+
+See https://legendapp.com/open-source/legend-state-v1/ for more details.
+
+## 1.0.0-rc.34
+
+- Fix: Reactive FlatList `data$` prop was not working correctly #66
+
+## 1.0.0-rc.33
+
+- Perf: Improve performance of arrays
+- Perf: Improve performance of useSelector when passing an observable directly
+- Perf: Improve performance of the For component
+
+## 1.0.0-rc.32
+
+- Change: `useObserve` runs the function less often
+- Change: `when` checks truthiness instead of readiness. Use `whenReady` if you want empty objects and arrays to not count.
+- Change: `afterBatch` runs after the batch instead of at the end of a batch, which is more useful
+- Perf: Changes are internally batched by node instead of by listener, resulting in fewer `onChange` calls
+
+## 1.0.0-rc.31
+
+- Feat: Add a sortValues function to For for use with eachValues
+
+## 1.0.0-rc.30
+
+- Feat: Add support for a _keyExtractor field to return an arbitrary key value on arrays
+- Change: internals is exported as an object instead of a separate export path
+
+## 1.0.0-rc.29
+
+- Fix: Prevent batches from running recursively
+- Fix: The second "reaction" paremeter in `observe` sometimes had an incorrect `previous` value
+
+## 1.0.0-rc.27
+
+- Fix: `getPrevious()` in onChange was sometimes incorrect during a batch
+
+## 1.0.0-rc.26
+
+- Perf: Removed IndexedDB preloader because it's actually slower because of the time it takes to copy the data across the Web Worker bridge
+
+## 1.0.0-rc.23
+
+- Perf: Miscellaneous micro-optimizing
+
+## 1.0.0-rc.22
+
+- Feat: Add a useObservableNextRouter hook for Next.js
+- Perf: Persistence plugins queue into a microtask to bundle saves together
+
+## 1.0.0-rc.21
+
+- Feat: Added `eachValues` prop to For to map the values of an object
+
+## 1.0.0-rc.20
+
+- Fix: useSelector now uses useSyncExternalStore under the hood to support Suspense better
+
+## 1.0.0-rc.19
+
+- Fix: mergeIntoObservable was sometimes deleting undefined fields
+
+## 1.0.0-rc.17
+
+- Perf: Sped up IndexedDB plugin and removed the preloader because it was actually slower
+
+## 1.0.0-rc.16
+
+- Fix: Fast Refresh sometimes resetting observables -By @GiFarina
+
+## 1.0.0-rc.14
+
+- Perf: Running notifications in large objects sped up
+
+## 1.0.0-rc.10
+
+- Fix: `afterBatch` was not working correctly if run from within a batch
+
+## 1.0.0-rc.4
+
+- Feature: Added two way `computed`
+
+## 1.0.0-rc.2
+
+- Feature: `batch` has a new `onComplete `batch(callback, onComplete)` parameter to run a function after the batch commits. This can be useful for cleaning up a temporary state while batching.
+- Fix: onChange with `initial` option fires immediately rather than going through batching process
+- Fix: Applying pending changes on load was writing back to local persistence unnecessarily
+- Perf: Improve performance of `mergeIntoObservable` by just doing a `set` if a target property is empty and doesn't need merging logic
+- Perf: Improve persistence overall by using more targeted approaches than `mergeIntoObservable`
+
+## 1.0.0-rc.1
+
+- Fix: Incrementing a value from 0 with a function (`value.set((prev) => prev + 1)`) was not firing a callback the first time
+
+
+## 1.0.0-rc.0
+
+- Breaking: `onChange` function changed to take an options object as a second parameter with a new `initial` option that makes it fire immediately with the current value.
+- Breaking: `onChange` callback receives an object parameter instead of many arguments. This adds more flexibility for callers who care about different values in the change object.
+- Fix: `mergeIntoObservable` was not working correctly in some edge cases.
+- Fix: IndexedDB persistence improved for many edge cases, with some fixes and performance improvements
+- Fix: Persistence layers overall improved with more stability and better performance
+
+## 0.23.1
+
+- Fix: Not notifying on change of dates
+
 ## 0.23.0
 
 - Breaking: Improved the criteria of when to notify up parents for changes on objects to run only when something inside it has changed, so setting/assigning the same object onto itself will not notify. It's unlikely but possible that may be a breaking change for you if you depended on things re-computing/re-rendering even if nothing changed.

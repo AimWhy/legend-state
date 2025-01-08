@@ -1,17 +1,16 @@
-import { useObservable } from '@legendapp/state/react';
-import { useEffect } from 'react';
-import type { Observable } from '../observableInterfaces';
+import type { Observable } from '@legendapp/state';
+import { useMountOnce } from './useMount';
+import { useObservable } from './useObservable';
 
 export function useIsMounted(): Observable<boolean> {
     const obs = useObservable(false);
 
-    useEffect(() => {
-        obs.set(true);
+    const { set } = obs;
+    useMountOnce(() => {
+        set(true);
 
-        return () => {
-            obs.set(false);
-        };
-    }, []);
+        return () => set(false);
+    });
 
     return obs;
 }

@@ -2,26 +2,26 @@ import { isFunction, Observable, observable } from '@legendapp/state';
 import React, { MutableRefObject, Reducer, ReducerState } from 'react';
 
 function overrideHooks<TRet>(refObs: MutableRefObject<Observable<TRet> | undefined>) {
-    // @ts-ignore
+    // @ts-expect-error Types don't match React's expected types
     React.useState = function useState(initialState: TRet | (() => TRet)) {
         const obs =
             refObs.current ??
-            (refObs.current = observable(isFunction(initialState) ? initialState() : initialState) as Observable<TRet>);
+            (refObs.current = observable((isFunction(initialState) ? initialState() : initialState) as any) as any);
         return [obs.get() as TRet, obs.set] as [TRet, React.Dispatch<React.SetStateAction<TRet>>];
     };
-    // @ts-ignore
+    // @ts-expect-error Types don't match React's expected types
     React.useReducer = function useReducer<R extends Reducer<any, any>>(
         reducer: R,
         initializerArg: ReducerState<R>,
-        initializer: (arg: ReducerState<R>) => ReducerState<R>
+        initializer: (arg: ReducerState<R>) => ReducerState<R>,
     ) {
         const obs =
             refObs.current ??
             (refObs.current = observable(
                 initializerArg !== undefined && isFunction(initializerArg)
                     ? initializer(initializerArg)
-                    : initializerArg
-            ) as Observable<TRet>);
+                    : initializerArg,
+            ) as any);
         const dispatch = (action: any) => {
             obs.set(reducer(obs.get(), action));
         };
@@ -30,7 +30,7 @@ function overrideHooks<TRet>(refObs: MutableRefObject<Observable<TRet> | undefin
 }
 
 export function createObservableHook<TArgs extends any[], TRet>(
-    fn: (...args: TArgs) => TRet
+    fn: (...args: TArgs) => TRet,
 ): (...args: TArgs) => Observable<TRet> {
     const _useState = React.useState;
     const _useReducer = React.useReducer;

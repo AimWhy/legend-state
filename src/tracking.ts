@@ -1,18 +1,10 @@
-import type { NodeValue, TrackingNode, TrackingType } from './observableInterfaces';
-
-interface TrackingState {
-    nodes?: Map<number, TrackingNode>;
-    traceListeners?: (nodes: Map<number, TrackingNode>) => void;
-    traceUpdates?: (fn: Function) => Function;
-}
-let lastNode: NodeValue;
+import type { NodeInfo, TrackingState, TrackingType } from './observableInterfaces';
 
 let trackCount = 0;
 const trackingQueue: (TrackingState | undefined)[] = [];
 
 export const tracking = {
     current: undefined as TrackingState | undefined,
-    inRemoteChange: false,
 };
 
 export function beginTracking() {
@@ -27,15 +19,11 @@ export function endTracking() {
     trackCount--;
     if (trackCount < 0) {
         trackCount = 0;
-        if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-            // Shouldn't be possible, but leave as a sanity check
-            debugger;
-        }
     }
     tracking.current = trackingQueue.pop();
 }
 
-export function updateTracking(node: NodeValue, track?: TrackingType) {
+export function updateTracking(node: NodeInfo, track?: TrackingType) {
     if (trackCount) {
         const tracker = tracking.current;
         if (tracker) {
@@ -43,13 +31,12 @@ export function updateTracking(node: NodeValue, track?: TrackingType) {
                 tracker.nodes = new Map();
             }
 
-            lastNode = node;
-            const existing = tracker.nodes.get(node.id);
+            const existing = tracker.nodes.get(node);
             if (existing) {
                 existing.track = existing.track || track;
                 existing.num++;
             } else {
-                tracker.nodes.set(node.id, { node, track, num: 1 });
+                tracker.nodes.set(node, { node, track, num: 1 });
             }
         }
     }
